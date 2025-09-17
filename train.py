@@ -28,7 +28,30 @@ def solve_model_id(model_id):
         return 'microsoft/deberta-large'
     else:
         return model_id
+# ---------------- EarlyStopping ----------------
+class EarlyStopping:
+    def __init__(self, patience=3, mode='max', min_delta=0):
+        self.patience = patience
+        self.mode = mode
+        self.min_delta = min_delta
+        self.best = None
+        self.num_bad_epochs = 0
+        self.should_stop = False
 
+    def step(self, metric):
+        if self.best is None:
+            self.best = metric
+            return False
+        if (self.mode == 'max' and metric > self.best + self.min_delta) or \
+           (self.mode == 'min' and metric < self.best - self.min_delta):
+            self.best = metric
+            self.num_bad_epochs = 0
+        else:
+            self.num_bad_epochs += 1
+        if self.num_bad_epochs >= self.patience:
+            self.should_stop = True
+        return self.should_stop
+    
 def train(
     model,
     loader,
@@ -97,6 +120,7 @@ def valid(
 
 def main(args):
     # To easily specify the model_id 
+    print(args.early_stopper)
     args.model_id = solve_model_id(args.model_id)
     print('Start ...')
     random.seed(args.seed)
@@ -197,6 +221,7 @@ def main(args):
     tokenizer.save_pretrained(path_to_best)
     tokenizer.save_pretrained(path_to_last)
     max_acc = -1
+    early_stopper = EarlyStopping(patience=5, mode='max')
     print('Start training...')
     def set_lr(optimizer, lr):
         for param in optimizer.param_groups:
@@ -247,6 +272,11 @@ def main(args):
             }
             with open(os.path.join(args.save_dir, 'log.json'), 'w') as f:
                 json.dump(logs, f, indent=2)
+
+            # ---------------- EarlyStopping ----------------
+            if early_stopper.step(valid_log['accuracy']):
+                print(f"No improvement in {early_stopper.patience} epochs, stopping early at epoch {e}.")
+                break
     print('finish')
 
 def get_parser():
@@ -255,6 +285,7 @@ def get_parser():
     parser.add_argument('--valid_file', required=True)
     parser.add_argument('--model_id', default='bert-base-cased')
     parser.add_argument('--batch_size', type=int, default=16)
+    parser.add_argument('--early_stopper', type=int, default=16)
     parser.add_argument('--delimeter', default='SEPL|||SEPR')
     parser.add_argument('--additional_delimeter', default='SEPL__SEPR')
     parser.add_argument('--restore_dir')
