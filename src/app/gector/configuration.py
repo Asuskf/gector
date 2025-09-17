@@ -1,5 +1,3 @@
-import os
-import json
 from transformers import PretrainedConfig
 class GECToRConfig(PretrainedConfig):
     def __init__(

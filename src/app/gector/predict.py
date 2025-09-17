@@ -1,6 +1,5 @@
 import torch
 import os
-from tqdm import tqdm
 from .modeling import GECToR
 from transformers import PreTrainedTokenizer
 from typing import List

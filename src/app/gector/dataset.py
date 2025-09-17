@@ -1,8 +1,7 @@
-from typing import List, Tuple
+from typing import List
 from collections import Counter
 import torch
 from tqdm import tqdm
-import os
 from transformers import PreTrainedTokenizer
 
 class GECToRDataset:

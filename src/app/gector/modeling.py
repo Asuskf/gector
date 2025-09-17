@@ -1,14 +1,13 @@
-from transformers import AutoModel, AutoTokenizer, AutoConfig, PreTrainedModel
+from transformers import AutoModel, AutoTokenizer, PreTrainedModel
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
 from torch.nn import CrossEntropyLoss
 from dataclasses import dataclass
 from .configuration import GECToRConfig
-from typing import List, Union, Optional, Tuple
+from typing import List, Optional
 from .vocab import load_vocab_from_official
 from .utils import has_args_add_pooling
-import pprint
 
 @dataclass
 class GECToROutput:

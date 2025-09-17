@@ -1,5 +1,4 @@
 import argparse
-import os
 from difflib import SequenceMatcher
 
 import Levenshtein
