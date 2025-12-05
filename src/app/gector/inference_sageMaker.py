@@ -298,7 +298,7 @@ def predict_fn(input_data, model_artifacts):
         device = model_artifacts["device"]
         
         text = input_data.get("text", "")
-        text = re.sub(r"(\d+)([a-zA-ZáéíóúñÁÉÍÓÚÑ]+)", r"\1 \2", text)
+        text = re.sub(r"(?<=\d)(?=[A-Za-záéíóúñÁÉÍÓÚÑ])|(?<=[A-Za-záéíóúñÁÉÍÓÚÑ])(?=\d)", " ", text)
         if not text:
             raise ValueError("Input text is empty")
         text = " ".join(text.split())
