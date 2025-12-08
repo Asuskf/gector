@@ -287,50 +287,52 @@ def input_fn(request_body, request_content_type):
 def predict_fn(input_data, model_artifacts):
     """
     Perform prediction using the GECToR model.
-    Expects input_data to be a dict with a 'text' field containing a single string.
+    Expects input_data to be a dict with a 'texts' field containing a list of strings.
     """
-    #logger.info("Starting predict_fn...")
     try:
         model = model_artifacts["model"]
         tokenizer = model_artifacts["tokenizer"]
         encode = model_artifacts["encode"]
         decode = model_artifacts["decode"]
         device = model_artifacts["device"]
-        
-        text = input_data.get("text", "")
-        text = re.sub(r"(?<=\d)(?=[A-Za-záéíóúñÁÉÍÓÚÑ])|(?<=[A-Za-záéíóúñÁÉÍÓÚÑ])(?=\d)", " ", text)
-        if not text:
-            raise ValueError("Input text is empty")
-        text = " ".join(text.split())
-        #logger.info(f"Processing text: {text[:50]}...")
-        
+
+        texts = input_data.get("texts", [])
+        if not isinstance(texts, list) or len(texts) == 0:
+            raise ValueError("Input must contain a non-empty list under 'texts'")
+
+        # Clean each text
+        cleaned_texts = []
+        for text in texts:
+            text = re.sub(r"(?<=\d)(?=[A-Za-záéíóúñÁÉÍÓÚÑ])|(?<=[A-Za-záéíóúñÁÉÍÓÚÑ])(?=\d)", " ", text)
+            text = " ".join(text.split())
+            cleaned_texts.append(text)
+
         predictions = predict(
             model=model,
             tokenizer=tokenizer,
-            srcs=[text],
+            srcs=cleaned_texts,
             encode=encode,
             decode=decode,
             keep_confidence=0.8,
             min_error_prob=0.6,
-            batch_size=1,  # Reduced for single input to minimize latency
+            batch_size=8,  # ahora batch real
             n_iteration=2,
             device=device
         )
-        
-        #logger.info("Prediction completed.")
+
         return predictions
+
     except Exception as e:
         logger.error(f"Error in predict_fn: {str(e)}")
         raise
+
 
 def output_fn(prediction, accept):
     """
     Serialize the prediction output to JSON.
     """
-    #logger.info("Starting output_fn...")
     if accept == "application/json":
-        result = {"corrected_text": prediction[0] if prediction else ""}
-        #logger.info(f"Output: {result}")
+        result = {"corrected_texts": prediction}
         return json.dumps(result)
     else:
         raise ValueError(f"Unsupported accept type: {accept}")
